@@ -116,4 +116,22 @@ SELECT
     ROUND(SUM(tiene_internet_real) * 100.0 / COUNT(*), 2) AS pct_con_internet
 FROM cobertura_movil;
 
+-- ============================================
+-- Corrección: Inconsistencia de mayúsculas/minúsculas
+-- en nombres de departamento (Puno, PUNO)
+-- ============================================
 
+-- Diagnóstico antes de corregir
+SELECT DISTINCT departamento
+FROM cobertura_movil
+ORDER BY departamento;
+
+-- Estandarizar a mayúsculas y eliminar espacios extra
+UPDATE cobertura_movil
+SET departamento = UPPER(TRIM(departamento));
+
+-- Verificar que quedó correcto
+SELECT DISTINCT departamento, COUNT(*) 
+FROM cobertura_movil
+GROUP BY departamento
+ORDER BY departamento;
