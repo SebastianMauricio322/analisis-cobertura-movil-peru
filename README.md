@@ -80,4 +80,4 @@ El dataset principal llegó sorprendentemente limpio (sin nulos, sin coordenadas
 
 ## Autor
 
-Sebastián Mauricio — [LinkedIn](#) · [GitHub](https://github.com/SebastianMauricio322)
+Sebastián Mauricio — [LinkedIn](https://www.linkedin.com/in/sebastian-mauricio/) · [GitHub](https://github.com/SebastianMauricio322)
