@@ -2,11 +2,11 @@
 
 ## Contexto
 
-Análisis de la cobertura del servicio móvil a nivel de centros poblados en el Perú, usando datos oficiales de **OSIPTEL** (Organismo Supervisor de Inversión Privada en Telecomunicaciones). El proyecto combina una fotografía del estado actual de la red (marzo 2023) con la evolución histórica de cobertura por operadora entre 2010 y 2019.
+Análisis de la cobertura del servicio móvil a nivel de centros poblados en el Perú, usando datos oficiales de **OSIPTEL** (Organismo Supervisor de Inversión Privada en Telecomunicaciones). El proyecto combina una fotografía del estado actual de la red (marzo 2023) con la evolución histórica de cobertura por operadora entre 2010 y 2019, analizado primero en SQL puro y luego llevado a un dashboard interactivo en Power BI.
 
 ## Objetivo
 
-Identificar la brecha digital por región, analizar la competencia entre las 4 operadoras móviles del país y evaluar la calidad de red disponible para la población peruana, usando exclusivamente SQL como herramienta de análisis.
+Identificar la brecha digital por región, analizar la competencia entre las 4 operadoras móviles del país y evaluar la calidad de red disponible para la población peruana.
 
 ## Fuentes de datos
 
@@ -17,8 +17,8 @@ Identificar la brecha digital por región, analizar la competencia entre las 4 o
 
 ## Herramientas
 
-- PostgreSQL 16
-- DBeaver
+- PostgreSQL 16 + DBeaver — limpieza y análisis con SQL
+- Power BI Desktop — modelado, DAX y visualización
 
 ## Estructura del proyecto
 
@@ -35,10 +35,21 @@ analisis-cobertura-movil-peru/
 │   ├── 03_limpieza.sql
 │   └── 04_analisis.sql
 │
+├── powerbi/
+│   ├── dashboard_cobertura_movil.pbix
+│   └── capturas/
+│       ├── pagina_direccion.png
+│       ├── pagina_ingenieria.png
+│       └── pagina_comercial.png
+│
 └── README.md
 ```
 
-## Problemas encontrados en los datos
+---
+
+## Fase 1 — SQL: limpieza y análisis
+
+### Problemas encontrados en los datos
 
 El dataset principal llegó sorprendentemente limpio (sin nulos, sin coordenadas inválidas), pero surgieron varios problemas reales durante la carga y preparación:
 
@@ -49,7 +60,7 @@ El dataset principal llegó sorprendentemente limpio (sin nulos, sin coordenadas
 - **Tabla histórica con filas de encabezado y metadatos mezclados:** el Excel original traía un título y filas vacías antes de la cabecera real, que se colaron como registros al primer intento de carga.
 - **Un solo periodo en el dataset principal (marzo 2023):** esto impidió el análisis de evolución temporal sobre esa tabla — se resolvió complementando con el dataset histórico (2010-2019) para cubrir ese ángulo.
 
-## Hallazgos principales
+### Hallazgos principales
 
 **1. Brecha digital geográfica marcada por dificultad de acceso.** Huancavelica (26.7%) y Loreto (24.4%) tienen la mayor proporción de centros poblados atrapados solo en tecnología 2G, sin acceso a internet real — consistente con su geografía de sierra alta y selva profunda. Callao, en contraste, tiene 0% de centros solo en 2G y encabeza el índice de conectividad nacional.
 
@@ -63,13 +74,7 @@ El dataset principal llegó sorprendentemente limpio (sin nulos, sin coordenadas
 
 **6. Ningún centro poblado del dataset carece por completo de cobertura.** Los 51,366 registros tienen al menos una tecnología de red activa (2G como mínimo) — la verdadera brecha no está en la ausencia total de señal sino en la calidad de la que sí existe.
 
-## Limitaciones
-
-- El dataset principal es una fotografía de un solo mes (marzo 2023); no permite ver tendencia reciente por sí solo.
-- La serie histórica llega hasta 2019 — hay un vacío de datos públicos entre 2019 y 2023.
-- Los datos representan lo reportado por las operadoras a OSIPTEL, no necesariamente el universo completo de centros poblados del Perú.
-
-## Archivos SQL
+### Archivos SQL
 
 | Archivo | Contenido |
 |---|---|
@@ -77,6 +82,67 @@ El dataset principal llegó sorprendentemente limpio (sin nulos, sin coordenadas
 | `02_cargar_datos.sql` | Documentación del proceso de carga de datos crudos |
 | `03_limpieza.sql` | Diagnóstico y corrección de calidad de datos |
 | `04_analisis.sql` | 10 consultas de negocio organizadas en 4 bloques temáticos (brecha digital, competencia, calidad de red, evolución histórica) |
+
+---
+
+## Fase 2 — Power BI: dashboard interactivo
+
+Como segunda etapa del proyecto, los mismos datos ya limpios en PostgreSQL se conectaron directamente a **Power BI** (sin migrar a otro motor de base de datos) para construir un dashboard interactivo de 3 páginas, cada una diseñada para una audiencia distinta dentro de una empresa de telecomunicaciones.
+
+### Enfoque de diseño
+
+En vez de un dashboard único que intenta mostrar todo a todos, se construyeron 3 vistas con propósitos diferenciados:
+
+| Página | Audiencia | Enfoque |
+|---|---|---|
+| **Dirección** | Gerencia general | Panorama nacional en KPIs grandes: cobertura 4G y brecha en 2G por departamento |
+| **Ingeniería** | Equipo técnico / expansión de red | Detalle de infraestructura: estaciones base por operadora y concentración geográfica |
+| **Comercial** | Análisis de mercado y competencia | Participación de mercado, evolución histórica 2010-2019 y crecimiento interanual |
+
+### Capturas
+
+**Dirección**
+
+![Dashboard Dirección](./powerbi/capturas/pagina_direccion.png)
+
+**Ingeniería**
+
+![Dashboard Ingeniería](./powerbi/capturas/pagina_ingenieria.png)
+
+**Comercial**
+
+![Dashboard Comercial](./powerbi/capturas/pagina_comercial.png)
+
+### Medidas DAX destacadas
+
+El modelo incluye medidas DAX desde agregaciones simples hasta patrones avanzados:
+
+- **Cálculos base:** `Total Centros Poblados`, `Centros con 4G`, `Centros solo 2G`
+- **Porcentajes con DIVIDE:** `% Cobertura 4G`, `% Solo 2G`, `Participación Operadora`
+- **Búsqueda de valor máximo (TOPN + ALL):** `Departamento Líder 4G` y `Operadora Líder` — identifican dinámicamente el máximo sin necesidad de ordenar manualmente
+- **Comparación temporal sin time intelligence nativo:** `Valor Año Anterior` y `Crecimiento % Histórico` — construidas con `CALCULATE` + `FILTER` + `ALL`, ya que la columna de año es un entero y no una fecha de calendario, lo que impide usar funciones como `SAMEPERIODLASTYEAR`
+
+### Un problema real de modelado resuelto
+
+Al construir la medida de crecimiento histórico, los resultados no coincidían con los cálculos ya validados en SQL (se obtenían porcentajes hasta 200 veces más altos de lo esperado). La causa: la tabla `cobertura_historica` tiene múltiples trimestres por año, y las medidas estaban sumando todos los trimestres en vez de tomar solo el más representativo (el mismo criterio de "último trimestre reportado" usado en la consulta SQL 4.1).
+
+**Solución:** se creó una tabla calculada (`CobHist_TrimestreAlto`) usando `SUMMARIZE` + `ADDCOLUMNS` + `LOOKUPVALUE` para reducir la tabla a una fila por año-operadora antes de calcular el crecimiento — replicando en DAX la misma lógica que el CTE `trimestre_anio_alto` resolvía en SQL con `ROW_NUMBER()`.
+
+### Nota sobre el modelo de datos
+
+Las tablas `cobertura_movil` (nivel centro poblado, marzo 2023) y `cobertura_historica` / `CobHist_TrimestreAlto` (nivel nacional agregado, 2010-2019) se mantienen **sin relacionar** en el modelo, ya que representan niveles de granularidad distintos y no comparten una clave real. Relacionarlas artificialmente generaría resultados incorrectos por relaciones ambiguas — una decisión de modelado deliberada, no una limitación.
+
+### Archivo
+
+- `powerbi/dashboard_cobertura_movil.pbix`
+
+---
+
+## Limitaciones
+
+- El dataset principal es una fotografía de un solo mes (marzo 2023); no permite ver tendencia reciente por sí solo.
+- La serie histórica llega hasta 2019 — hay un vacío de datos públicos entre 2019 y 2023.
+- Los datos representan lo reportado por las operadoras a OSIPTEL, no necesariamente el universo completo de centros poblados del Perú.
 
 ## Autor
 
